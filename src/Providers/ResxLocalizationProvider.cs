@@ -53,6 +53,16 @@ namespace WPFLocalizeExtension.Providers
                 typeof(bool),
                 typeof(ResxLocalizationProvider),
                 new PropertyMetadata(true, IgnoreCaseChanged));
+
+        /// <summary>
+        /// <see cref="DependencyProperty"/> IgnoreCase to set the support languages.
+        /// </summary>
+        public static readonly DependencyProperty SupportLanguagesProperty = 
+            DependencyProperty.RegisterAttached(
+                "SupportLanguages", 
+                typeof(string[]), 
+                typeof(ResxLocalizationProvider), 
+                new PropertyMetadata(null, SupportLanguagesChanged));
         #endregion
 
         #region Dependency Property Callback
@@ -89,6 +99,16 @@ namespace WPFLocalizeExtension.Providers
             Instance.OnProviderChanged(obj);
         }
 
+        /// <summary>
+        /// Indicates, that the <see cref="SupportLanguagesProperty"/> attached property changed.
+        /// </summary>
+        /// <param name="obj">The dependency object.</param>
+        /// <param name="e">The event argument.</param>
+        private static void SupportLanguagesChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+        {
+            Instance.SupportLanguages = (string[])e.NewValue;
+            Instance.OnProviderChanged(obj);
+        }
         #endregion
 
         #region Dependency Property Management
@@ -122,6 +142,16 @@ namespace WPFLocalizeExtension.Providers
         {
             return obj.GetValueSync<bool>(IgnoreCaseProperty);
         }
+
+        /// <summary>
+        /// Getter of <see cref="DependencyProperty"/> support languages.
+        /// </summary>
+        /// <param name="obj">The dependency object to get the support languages from.</param>
+        /// <returns>The ignore case flag.</returns>
+        public static string[] GetSupportLanguages(DependencyObject obj)
+        {
+            return obj.GetValueSync<string[]>(SupportLanguagesProperty);
+        }
         #endregion
 
         #region Set
@@ -153,6 +183,16 @@ namespace WPFLocalizeExtension.Providers
         public static void SetIgnoreCase(DependencyObject obj, bool value)
         {
             obj.SetValueSync(IgnoreCaseProperty, value);
+        }
+
+        /// <summary>
+        /// Setter of <see cref="DependencyProperty"/> support languages.
+        /// </summary>
+        /// <param name="obj">The dependency object to set the support languages to.</param>
+        /// <param name="value">The support languages.</param>
+        public static void SetSupportLanguages(DependencyObject obj, string[] value)
+        {
+            obj.SetValueSync(SupportLanguagesProperty, value);
         }
         #endregion
         #endregion
@@ -247,6 +287,20 @@ namespace WPFLocalizeExtension.Providers
 
             var dictionary = target.GetValueOrRegisterParentNotifier<string>(DefaultDictionaryProperty, ParentChangedAction, _parentNotifiers);
             return string.IsNullOrEmpty(dictionary) ? FallbackDictionary : dictionary;
+        }
+
+        /// <summary>
+        /// Get the support languages from the context, if possible.
+        /// </summary>
+        /// <param name="target">The target object.</param>
+        /// <returns>The support languages , if available.</returns>
+        protected override string[] GetSupportLanguageSet(DependencyObject target)
+        {
+            if (target == null)
+                return DefaultSupportLanguages;
+
+            var languages = target.GetValueOrRegisterParentNotifier<string[]>(SupportLanguagesProperty, ParentChangedAction, _parentNotifiers);
+            return languages ?? DefaultSupportLanguages;
         }
         #endregion
     }

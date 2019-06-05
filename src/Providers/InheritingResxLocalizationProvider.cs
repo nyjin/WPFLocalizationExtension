@@ -43,6 +43,17 @@ namespace WPFLocalizeExtension.Providers
                 typeof(string),
                 typeof(InheritingResxLocalizationProvider),
                 new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, AttachedPropertyChanged));
+
+
+        /// <summary>
+        /// <see cref="DependencyProperty"/> DefaultAssembly to set the fallback assembly.
+        /// </summary>
+        public static readonly DependencyProperty SupportLangugesProperty =
+            DependencyProperty.RegisterAttached(
+                "SupportLanguges",
+                typeof(string[]),
+                typeof(InheritingResxLocalizationProvider),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, AttachedPropertyChanged));
         #endregion
 
         #region Dependency Property Callback
@@ -78,6 +89,16 @@ namespace WPFLocalizeExtension.Providers
         {
             return obj.GetValueSync<string>(DefaultAssemblyProperty);
         }
+
+        /// <summary>
+        /// Getter of <see cref="DependencyProperty"/> default assembly.
+        /// </summary>
+        /// <param name="obj">The dependency object to get the default assembly from.</param>
+        /// <returns>The support languages.</returns>
+        public static string[] GetSupportLanguages(DependencyObject obj)
+        {
+            return obj.GetValueSync<string[]>(SupportLangugesProperty);
+        }
         #endregion
 
         #region Set
@@ -99,6 +120,16 @@ namespace WPFLocalizeExtension.Providers
         public static void SetDefaultAssembly(DependencyObject obj, string value)
         {
             obj.SetValueSync(DefaultAssemblyProperty, value);
+        }
+
+        /// <summary>
+        /// Setter of <see cref="DependencyProperty"/> default assembly.
+        /// </summary>
+        /// <param name="obj">The dependency object to set the default assembly to.</param>
+        /// <param name="value">The support languages.</param>
+        public static void SetSupportLanguages(DependencyObject obj, string[] value)
+        {
+            obj.SetValueSync(SupportLangugesProperty, value);
         }
         #endregion
         #endregion
@@ -145,6 +176,17 @@ namespace WPFLocalizeExtension.Providers
         {
             return target?.GetValue(DefaultDictionaryProperty) as string;
         }
+
+        /// <summary>
+        /// Get the support languages from the context, if possible.
+        /// </summary>
+        /// <param name="target">The target object.</param>
+        /// <returns>The support languages , if available.</returns>
+        protected override string[] GetSupportLanguageSet(DependencyObject target)
+        {
+            return target?.GetValue(SupportLangugesProperty) as string[];
+        }
+
         #endregion
     }
 }

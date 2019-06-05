@@ -25,6 +25,7 @@
 		<DelaySign>false</DelaySign>
 		<PublicSign>true</PublicSign>
 		<AssemblyOriginatorKeyFile>public.snk</AssemblyOriginatorKeyFile>
+		<PackageId>WPFLocalizeExtension.SupportLanguages</PackageId>
 	</PropertyGroup>
 
 	<Choose>
