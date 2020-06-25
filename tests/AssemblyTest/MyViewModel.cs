@@ -46,7 +46,7 @@ namespace AssemblyTest
 
         public MyViewModel()
         {
-            ResxLocalizationProvider.Instance.UpdateCultureList("AssemblyTest", "Strings");
+            ResxLocalizationProvider.Instance.UpdateCultureList("AssemblyTest", "Strings", null);
         }
     }
 }
