@@ -7,20 +7,22 @@
 // <author>Bernhard Millauer</author>
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Resources;
-using System.Windows;
-using System.Management;
-
 namespace WPFLocalizeExtension.Providers
 {
+    #region Usings
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Diagnostics;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Management;
+    using System.Reflection;
+    using System.Resources;
+    using System.Windows;
+    #endregion
+
     /// <summary>
     /// The base for RESX file providers.
     /// </summary>
@@ -36,6 +38,11 @@ namespace WPFLocalizeExtension.Providers
         /// Holds the extension of the resource files.
         /// </summary>
         private const string ResourceFileExtension = ".resources";
+
+        /// <summary>
+        /// Gets default support languages;
+        /// </summary>
+        protected readonly string[] DefaultSupportLanguages = new string[0];
 
         /// <summary>
         /// Holds the binding flags for the reflection to find the resource files.
@@ -58,6 +65,8 @@ namespace WPFLocalizeExtension.Providers
         protected object AvailableCultureListLock = new object();
 
         private bool _ignoreCase = true;
+        private string[] _supportLanguages;
+
         /// <summary>
         /// Gets or sets the ignore case flag.
         /// </summary>
@@ -65,6 +74,15 @@ namespace WPFLocalizeExtension.Providers
         {
             get => _ignoreCase;
             set => _ignoreCase = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the support languages.
+        /// </summary>
+        public string[] SupportLanguages
+        {
+            get => _supportLanguages;
+            set => _supportLanguages = value;
         }
         #endregion
 
@@ -145,6 +163,13 @@ namespace WPFLocalizeExtension.Providers
         /// <param name="target">The target object.</param>
         /// <returns>The dictionary name, if available.</returns>
         protected abstract string GetDictionary(DependencyObject target);
+
+        /// <summary>
+        /// Get the support languages from the context, if possible.
+        /// </summary>
+        /// <param name="target">The target object.</param>
+        /// <returns>The support languages , if available.</returns>
+        protected abstract string[] GetSupportLanguageSet(DependencyObject target);
         #endregion
 
         #region ResourceManager management
@@ -204,10 +229,11 @@ namespace WPFLocalizeExtension.Providers
         /// </summary>
         /// <param name="resourceAssembly">The resource assembly.</param>
         /// <param name="resourceDictionary">The dictionary to look up.</param>
+        /// <param name="supportLanguages">The support languages.</param>
         /// <returns>True, if the update was successful.</returns>
-        public bool UpdateCultureList(string resourceAssembly, string resourceDictionary)
+        public bool UpdateCultureList(string resourceAssembly, string resourceDictionary, string[] supportLanguages)
         {
-            return GetResourceManager(resourceAssembly, resourceDictionary) != null;
+            return GetResourceManager(resourceAssembly, resourceDictionary, supportLanguages) != null;
         }
 
         private static readonly Dictionary<int, string> ExecutablePaths = new Dictionary<int, string>();
@@ -269,6 +295,7 @@ namespace WPFLocalizeExtension.Providers
         /// </summary>
         /// <param name="resourceAssembly">The resource assembly.</param>
         /// <param name="resourceDictionary">The dictionary to look up.</param>
+        /// <param name="supportLanguages">The support languages.</param>
         /// <returns>
         /// The found <see cref="ResourceManager"/>
         /// </returns>
@@ -278,7 +305,7 @@ namespace WPFLocalizeExtension.Providers
         /// <exception cref="System.ArgumentException">
         /// If the searched <see cref="ResourceManager"/> wasn't found
         /// </exception>
-        protected ResourceManager GetResourceManager(string resourceAssembly, string resourceDictionary)
+        protected ResourceManager GetResourceManager(string resourceAssembly, string resourceDictionary, string[] supportLanguages)
         {
             Assembly assembly = null;
             string foundResource = null;
@@ -289,7 +316,7 @@ namespace WPFLocalizeExtension.Providers
             // Here comes our great hack for full VS2012+ design time support with multiple languages.
             // We check only every second to reduce overhead in the designer.
             var now = DateTime.Now;
-            
+
             if (AppDomain.CurrentDomain.FriendlyName.Contains("XDesProc") && ((now - _lastUpdateCheck).TotalSeconds >= 1.0))
             {
                 // This block is only handled during design time.
@@ -496,9 +523,21 @@ namespace WPFLocalizeExtension.Providers
 
                 try
                 {
-                    // Get the list of all cultures.
-                    var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
-                    
+                    IEnumerable<CultureInfo> cultures;
+                    if (supportLanguages != null && supportLanguages.Length > 0)
+                    {
+                        cultures = supportLanguages.Select(x => new CultureInfo(x))
+                                                   .Concat(new []
+                                                        {
+                                                            CultureInfo.InvariantCulture
+                                                        });
+                    }
+                    else
+                    {
+                        // Get the list of all cultures.
+                        cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+                    }
+
                     foreach (var c in cultures)
                     {
                         var rs = resManager.GetResourceSet(c, true, false);
@@ -550,7 +589,7 @@ namespace WPFLocalizeExtension.Providers
                 return null;
 
             ParseKey(key, out var assembly, out var dictionary, out key);
-            
+
             if (string.IsNullOrEmpty(assembly))
                 assembly = GetAssembly(target);
 
@@ -585,9 +624,10 @@ namespace WPFLocalizeExtension.Providers
             {
                 var assembly = GetAssembly(target);
                 var dictionary = GetDictionary(target);
+                var supportLanguages = GetSupportLanguageSet(target);
 
                 if (!string.IsNullOrEmpty(assembly) && !string.IsNullOrEmpty(dictionary))
-                    GetResourceManager(assembly, dictionary);
+                    GetResourceManager(assembly, dictionary, supportLanguages);
             }
             catch
             {
@@ -655,7 +695,7 @@ namespace WPFLocalizeExtension.Providers
             // try to get the resouce manager
             try
             {
-                resManager = GetResourceManager(fqKey.Assembly, fqKey.Dictionary);
+                resManager = GetResourceManager(fqKey.Assembly, fqKey.Dictionary, DefaultSupportLanguages);
             }
             catch (Exception e)
             {

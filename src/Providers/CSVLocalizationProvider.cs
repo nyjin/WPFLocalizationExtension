@@ -6,21 +6,22 @@
 // <author>Sébastien Sevrin</author>
 #endregion
 
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.IO;
-using System.Text;
-using System.Windows;
-
-using WPFLocalizeExtension.Engine;
-using XAMLMarkupExtensions.Base;
-
 namespace WPFLocalizeExtension.Providers
 {
+    #region Usings
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.IO;
+    using System.Text;
+    using System.Windows;
+    using WPFLocalizeExtension.Engine;
+    using XAMLMarkupExtensions.Base;
+    #endregion
+
     /// <summary>
     /// A singleton CSV provider that uses attached properties and the Parent property to iterate through the visual tree.
     /// </summary>
-    public class CSVLocalizationProvider : CSVLocalizationProviderBase
+    public class CSVLocalizationProvider : CSVLocalizationProviderBase, ILocalizeInstance
     {
         #region Dependency Properties
         /// <summary>
@@ -81,42 +82,22 @@ namespace WPFLocalizeExtension.Providers
 
         #region Singleton Variables, Properties & Constructor
         /// <summary>
-        /// The instance of the singleton.
-        /// </summary>
-        private static CSVLocalizationProvider _instance;
-
-        /// <summary>
-        /// Lock object for the creation of the singleton instance.
-        /// </summary>
-        private static readonly object InstanceLock = new object();
-
-        /// <summary>
         /// Gets the <see cref="CSVLocalizationProvider"/> singleton.
         /// </summary>
         public static CSVLocalizationProvider Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    lock (InstanceLock)
-                    {
-                        if (_instance == null)
-                            _instance = new CSVLocalizationProvider();
-                    }
-                }
-
-                // return the existing/new instance
-                return _instance;
+                return InstanceLocator.Resolve<CSVLocalizationProvider>();
             }
         }
 
         /// <summary>
-        /// The singleton constructor.
+        /// The instance constructor.
         /// </summary>
-        private CSVLocalizationProvider()
+        public CSVLocalizationProvider()
         {
-            AvailableCultures = new ObservableCollection<CultureInfo> {CultureInfo.InvariantCulture};
+            AvailableCultures = new ObservableCollection<CultureInfo> { CultureInfo.InvariantCulture };
         }
 
         private bool _hasHeader;

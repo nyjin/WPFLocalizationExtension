@@ -6,20 +6,22 @@
 // <author>Uwe Mayer</author>
 #endregion
 
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Resources;
-using System.Windows;
-
-using XAMLMarkupExtensions.Base;
-
 namespace WPFLocalizeExtension.Providers
 {
+    #region Usings
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Resources;
+    using System.Windows;
+    using WPFLocalizeExtension.Engine;
+    using XAMLMarkupExtensions.Base;
+    #endregion
+
     /// <summary>
     /// A singleton RESX provider that uses inheriting attached properties.
     /// </summary>
-    public class InheritingResxLocalizationProvider : ResxLocalizationProviderBase
+    public class InheritingResxLocalizationProvider : ResxLocalizationProviderBase, ILocalizeInstance
     {
         #region Dependency Properties
         /// <summary>
@@ -39,6 +41,17 @@ namespace WPFLocalizeExtension.Providers
             DependencyProperty.RegisterAttached(
                 "DefaultAssembly",
                 typeof(string),
+                typeof(InheritingResxLocalizationProvider),
+                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, AttachedPropertyChanged));
+
+
+        /// <summary>
+        /// <see cref="DependencyProperty"/> DefaultAssembly to set the fallback assembly.
+        /// </summary>
+        public static readonly DependencyProperty SupportLangugesProperty =
+            DependencyProperty.RegisterAttached(
+                "SupportLanguges",
+                typeof(string[]),
                 typeof(InheritingResxLocalizationProvider),
                 new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.Inherits, AttachedPropertyChanged));
         #endregion
@@ -76,6 +89,16 @@ namespace WPFLocalizeExtension.Providers
         {
             return obj.GetValueSync<string>(DefaultAssemblyProperty);
         }
+
+        /// <summary>
+        /// Getter of <see cref="DependencyProperty"/> default assembly.
+        /// </summary>
+        /// <param name="obj">The dependency object to get the default assembly from.</param>
+        /// <returns>The support languages.</returns>
+        public static string[] GetSupportLanguages(DependencyObject obj)
+        {
+            return obj.GetValueSync<string[]>(SupportLangugesProperty);
+        }
         #endregion
 
         #region Set
@@ -98,20 +121,20 @@ namespace WPFLocalizeExtension.Providers
         {
             obj.SetValueSync(DefaultAssemblyProperty, value);
         }
+
+        /// <summary>
+        /// Setter of <see cref="DependencyProperty"/> default assembly.
+        /// </summary>
+        /// <param name="obj">The dependency object to set the default assembly to.</param>
+        /// <param name="value">The support languages.</param>
+        public static void SetSupportLanguages(DependencyObject obj, string[] value)
+        {
+            obj.SetValueSync(SupportLangugesProperty, value);
+        }
         #endregion
         #endregion
 
         #region Singleton Variables, Properties & Constructor
-        /// <summary>
-        /// The instance of the singleton.
-        /// </summary>
-        private static InheritingResxLocalizationProvider _instance;
-
-        /// <summary>
-        /// Lock object for the creation of the singleton instance.
-        /// </summary>
-        private static readonly object InstanceLock = new object();
-
         /// <summary>
         /// Gets the <see cref="ResxLocalizationProvider"/> singleton.
         /// </summary>
@@ -119,27 +142,17 @@ namespace WPFLocalizeExtension.Providers
         {
             get
             {
-                if (_instance == null)
-                {
-                    lock (InstanceLock)
-                    {
-                        if (_instance == null)
-                            _instance = new InheritingResxLocalizationProvider();
-                    }
-                }
-
-                // return the existing/new instance
-                return _instance;
+                return InstanceLocator.Resolve<InheritingResxLocalizationProvider>();
             }
         }
 
         /// <summary>
-        /// The singleton constructor.
+        /// The instance constructor.
         /// </summary>
-        private InheritingResxLocalizationProvider()
+        public InheritingResxLocalizationProvider()
         {
             ResourceManagerList = new Dictionary<string, ResourceManager>();
-            AvailableCultures = new ObservableCollection<CultureInfo> {CultureInfo.InvariantCulture};
+            AvailableCultures = new ObservableCollection<CultureInfo> { CultureInfo.InvariantCulture };
         }
         #endregion
 
@@ -151,7 +164,7 @@ namespace WPFLocalizeExtension.Providers
         /// <returns>The assembly name, if available.</returns>
         protected override string GetAssembly(DependencyObject target)
         {
-            return target?.GetValue(DefaultAssemblyProperty) as string; 
+            return target?.GetValue(DefaultAssemblyProperty) as string;
         }
 
         /// <summary>
@@ -163,6 +176,17 @@ namespace WPFLocalizeExtension.Providers
         {
             return target?.GetValue(DefaultDictionaryProperty) as string;
         }
+
+        /// <summary>
+        /// Get the support languages from the context, if possible.
+        /// </summary>
+        /// <param name="target">The target object.</param>
+        /// <returns>The support languages , if available.</returns>
+        protected override string[] GetSupportLanguageSet(DependencyObject target)
+        {
+            return target?.GetValue(SupportLangugesProperty) as string[];
+        }
+
         #endregion
     }
 }

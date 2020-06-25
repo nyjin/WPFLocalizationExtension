@@ -6,26 +6,27 @@
 // <author>Sébastien Sevrin</author>
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Resources;
-using System.Text;
-using System.Windows;
-
-using WPFLocalizeExtension.Engine;
-using XAMLMarkupExtensions.Base;
-
 namespace WPFLocalizeExtension.Providers
 {
+    #region Usings
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Resources;
+    using System.Text;
+    using System.Windows;
+    using WPFLocalizeExtension.Engine;
+    using XAMLMarkupExtensions.Base;
+    #endregion
+
     /// <summary>
     /// A singleton CSV provider that uses attached properties and the Parent property to iterate through the visual tree.
     /// </summary>
-    public class CSVEmbeddedLocalizationProvider : CSVLocalizationProviderBase
+    public class CSVEmbeddedLocalizationProvider : CSVLocalizationProviderBase, ILocalizeInstance
     {
         #region Dependency Properties
         /// <summary>
@@ -116,43 +117,23 @@ namespace WPFLocalizeExtension.Providers
 
         #region Singleton Variables, Properties & Constructor
         /// <summary>
-        /// The instance of the singleton.
-        /// </summary>
-        private static CSVEmbeddedLocalizationProvider _instance;
-
-        /// <summary>
-        /// Lock object for the creation of the singleton instance.
-        /// </summary>
-        private static readonly object InstanceLock = new object();
-
-        /// <summary>
         /// Gets the <see cref="CSVEmbeddedLocalizationProvider"/> singleton.
         /// </summary>
         public static CSVEmbeddedLocalizationProvider Instance
         {
             get
             {
-                if (_instance == null)
-                {
-                    lock (InstanceLock)
-                    {
-                        if (_instance == null)
-                            _instance = new CSVEmbeddedLocalizationProvider();
-                    }
-                }
-
-                // return the existing/new instance
-                return _instance;
+                return InstanceLocator.Resolve<CSVEmbeddedLocalizationProvider>();
             }
         }
 
         /// <summary>
-        /// The singleton constructor.
+        /// The instance constructor.
         /// </summary>
-        private CSVEmbeddedLocalizationProvider()
+        public CSVEmbeddedLocalizationProvider()
         {
             ResourceManagerList = new Dictionary<string, ResourceManager>();
-            AvailableCultures = new ObservableCollection<CultureInfo> {CultureInfo.InvariantCulture};
+            AvailableCultures = new ObservableCollection<CultureInfo> { CultureInfo.InvariantCulture };
         }
 
         private bool _hasHeader;
@@ -183,7 +164,7 @@ namespace WPFLocalizeExtension.Providers
         /// <returns>The assembly name, if available.</returns>
         protected override string GetAssembly(DependencyObject target)
         {
-            return target?.GetValueOrRegisterParentNotifier<string>(DefaultAssemblyProperty, ParentChangedAction, _parentNotifiers); 
+            return target?.GetValueOrRegisterParentNotifier<string>(DefaultAssemblyProperty, ParentChangedAction, _parentNotifiers);
         }
 
         /// <summary>
@@ -222,10 +203,10 @@ namespace WPFLocalizeExtension.Providers
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
             foreach (var assemblyInAppDomain in loadedAssemblies)
             {
-                    // get the assembly name object
-                    var assemblyName = new AssemblyName(assemblyInAppDomain.FullName);
-            
-                    // check if the name of the assembly is the seached one
+                // get the assembly name object
+                var assemblyName = new AssemblyName(assemblyInAppDomain.FullName);
+
+                // check if the name of the assembly is the seached one
                 if (assemblyName.Name == assembly)
                 {
                     //filename = assemblyInAppDomain.GetManifestResourceNames().Where(r => r.Contains(dictionary)).FirstOrDefault();
